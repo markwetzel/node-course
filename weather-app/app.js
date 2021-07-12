@@ -1,44 +1,40 @@
-const request = require('request');
+const geocode = require('./utils/geocode');
+const forecast = require('./utils/forecast');
 
-const mapBoxQuery = "Orlando";
-const apiToken = 'pk.eyJ1IjoiYW50aWVmZm9ydCIsImEiOiJja3F5OXJicXQwdHNuMm5udm1rdzI0bTJ5In0.9tg3W_AASkRmJlpRh3YeIg';
-const mapBoxApi = `https://api.mapbox.com/geocoding/v5/mapbox.places/${mapBoxQuery}.json?access_token=${apiToken}&limit=1`
+geocode('Tampa', (error, { latitude, longitude, location }) => {
+    if (error) {
+        console.log('Error', error);
+        return;
+    }
 
-try {
-
-    request({ url: mapBoxApi, json: true }, (error, response) => {
+    forecast(latitude, longitude, (error, data) => {
         if (error) {
-            console.error(error);
-            return;
-        } else if (response.body.features.length === 0) {
-            console.log('Error!');
+            console.log('Error', error);
             return;
         }
+        // console.log('Data', data);
 
+        const {
+            description,
+            temperature,
+            humidity,
+            feels_like
+        } = data;
 
-
-        const [longitude, latitude] = response.body.features[0].center;
-        const accessKey = '47e4c40ec67cc4d210193ef117c5ff07';
-
-        const url = `http://api.weatherstack.com/current?access_key=${accessKey}&query=${latitude},${longitude}&units=f`;
-
-
-        request({ url, json: true }, (error, response) => {
-            if (error) {
-                console.error(error);
-                return;
-            } else if (response.body.error) {
-                console.error('Unable to find location');
-                return;
-            }
-
-            const { temperature, precip, weather_descriptions } = response.body.current;
-            console.log(response.body.current);
-            console.log(response.body);
-            console.log(`${weather_descriptions[0]} in ${response.body.location.name}`);
-            console.log(`Is is currently ${temperature} degrees out. There is a ${precip}% chance of rain.`);
-        });
+        console.log(`The weather`);
+        console.log(`It's currently ${description} in ${}`);
+        console.log(`The temperature is ${temperature} degrees, but it feels like ${feels_like} degrees`);
+        console.log(`The humidity is ${humidity}%`);
     });
-} catch (error) {
-    console.error(error);
-}
+});
+
+//
+// Goal: Create a reusable function for getting the forecast
+//
+// 1. Setup the "forecast" function in utils/forecast.js
+// 2. Require the function in app.js and call it as shown below
+// 3. The forecast function should have three potential calls to callback:
+//    - Low level error, pass string for error
+//    - Coordinate error, pass string for error
+//    - Success, pass forecast string for data (same format as from before)
+
