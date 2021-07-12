@@ -1,44 +1,36 @@
-const request = require('request');
+const geocode = require('./utils/geocode');
+const forecast = require('./utils/forecast');
 
-const mapBoxQuery = "Orlando";
-const apiToken = 'pk.eyJ1IjoiYW50aWVmZm9ydCIsImEiOiJja3F5OXJicXQwdHNuMm5udm1rdzI0bTJ5In0.9tg3W_AASkRmJlpRh3YeIg';
-const mapBoxApi = `https://api.mapbox.com/geocoding/v5/mapbox.places/${mapBoxQuery}.json?access_token=${apiToken}&limit=1`
+const locationInput = process.argv[2];
+const locationMatch = /--location=(?<location>[A-Z].*)/i;
+const locationMatches = locationInput.match(locationMatch);
 
-try {
+const location = locationMatches?.groups?.location;
 
-    request({ url: mapBoxApi, json: true }, (error, response) => {
+if (!locationMatches) {
+    return console.log("Please provide a location");
+}
+
+printForecast(location);
+
+function printForecast(location) {
+    geocode(location, (error, { latitude, longitude, location }) => {
         if (error) {
-            console.error(error);
-            return;
-        } else if (response.body.features.length === 0) {
-            console.log('Error!');
-            return;
+            return console.log('Error', error);
         }
 
-
-
-        const [longitude, latitude] = response.body.features[0].center;
-        const accessKey = '47e4c40ec67cc4d210193ef117c5ff07';
-
-        const url = `http://api.weatherstack.com/current?access_key=${accessKey}&query=${latitude},${longitude}&units=f`;
-
-
-        request({ url, json: true }, (error, response) => {
+        forecast(latitude, longitude, (error, data) => {
             if (error) {
-                console.error(error);
-                return;
-            } else if (response.body.error) {
-                console.error('Unable to find location');
-                return;
+                return console.log('Error', error);
             }
+            const {
+                description, temperature, humidity, feels_like
+            } = data;
 
-            const { temperature, precip, weather_descriptions } = response.body.current;
-            console.log(response.body.current);
-            console.log(response.body);
-            console.log(`${weather_descriptions[0]} in ${response.body.location.name}`);
-            console.log(`Is is currently ${temperature} degrees out. There is a ${precip}% chance of rain.`);
+            console.log(`The weather`);
+            console.log(`It's currently ${description} in ${location}`);
+            console.log(`The temperature is ${temperature} degrees, but it feels like ${feels_like} degrees`);
+            console.log(`The humidity is ${humidity}%`);
         });
     });
-} catch (error) {
-    console.error(error);
 }
