@@ -45,12 +45,10 @@ app.get("/weather", (req, res) => {
     });
   }
 
-  geocode(location, (error, data) => {
+  geocode(location, (error, { latitude, longitude, location } = {}) => {
     if (error) {
       return res.send({ errorMessage: error });
     }
-
-    const { latitude, longitude, location } = data;
 
     forecast(latitude, longitude, (error, data) => {
       if (error) {
